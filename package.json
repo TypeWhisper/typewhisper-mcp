@@ -9,11 +9,14 @@
     "type": "git",
     "url": "git+https://github.com/TypeWhisper/typewhisper-mcp.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "bugs": {
     "url": "https://github.com/TypeWhisper/typewhisper-mcp/issues"
   },
   "bin": {
-    "typewhisper-mcp": "./dist/bin.js"
+    "typewhisper-mcp": "dist/bin.js"
   },
   "exports": {
     ".": {
