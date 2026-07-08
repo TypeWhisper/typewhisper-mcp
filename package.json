@@ -1,0 +1,57 @@
+{
+  "name": "@typewhisper/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for TypeWhisper local dictation, transcription, history, and dictionary automation.",
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/TypeWhisper/typewhisper-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TypeWhisper/typewhisper-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TypeWhisper/typewhisper-mcp/issues"
+  },
+  "bin": {
+    "typewhisper-mcp": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist coverage",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "typewhisper",
+    "mcp",
+    "model-context-protocol",
+    "transcription",
+    "dictation",
+    "speech-to-text",
+    "agent"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
