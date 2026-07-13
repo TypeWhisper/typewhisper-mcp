@@ -2,13 +2,13 @@
 
 `@typewhisper/mcp` exposes the local TypeWhisper API as a Model Context Protocol server for coding agents and other MCP clients.
 
-It connects to the TypeWhisper app running on the same macOS or Windows machine and lets agents transcribe local files, inspect model status, search transcription history, and manage Dictionary terms and corrections.
+It connects to a TypeWhisper app running locally or on a remote host and lets agents transcribe files, inspect model status, search transcription history, and manage Dictionary terms and corrections.
 
 ## Requirements
 
-- macOS or Windows with TypeWhisper installed
-- TypeWhisper local API server enabled in `Settings > Advanced`
-- Node.js 20 or newer
+- Node.js 20 or newer on the machine running this MCP server
+- TypeWhisper on a reachable macOS or Windows host
+- TypeWhisper local API server enabled under **Settings > Advanced**
 
 ## Install
 
@@ -71,6 +71,26 @@ typewhisper-mcp --dev
 typewhisper-mcp --base-url http://127.0.0.1:8978 --api-token "$TYPEWHISPER_API_TOKEN"
 ```
 
+## Remote TypeWhisper Host
+
+The MCP server itself can run on any Node.js platform. TypeWhisper currently binds its API to the host's loopback interface, so connect remote clients through a private tunnel instead of exposing the API publicly.
+
+For example, forward a local port from the agent machine to the TypeWhisper host:
+
+```bash
+ssh -N -L 18978:127.0.0.1:8978 user@typewhisper-host
+```
+
+Then start the MCP server with the forwarded URL and the bearer token from the TypeWhisper host's `api-discovery.json`:
+
+```bash
+TYPEWHISPER_API_BASE_URL=http://127.0.0.1:18978 \
+TYPEWHISPER_API_TOKEN="your-token" \
+typewhisper-mcp
+```
+
+For `typewhisper_transcribe_file`, the absolute path is resolved by the TypeWhisper host. Remote clients must therefore provide a path that exists on that host, for example through a shared or synchronized directory.
+
 ## Tools
 
 - `typewhisper_status`
@@ -84,7 +104,7 @@ typewhisper-mcp --base-url http://127.0.0.1:8978 --api-token "$TYPEWHISPER_API_T
 - `typewhisper_upsert_dictionary_correction`
 - `typewhisper_delete_dictionary_correction`
 
-`typewhisper_transcribe_file` requires an absolute file path because TypeWhisper runs as a separate app process.
+`typewhisper_transcribe_file` requires an absolute path on the TypeWhisper host because TypeWhisper runs as a separate app process.
 
 Recorder and live dictation controls are intentionally not part of the first release.
 

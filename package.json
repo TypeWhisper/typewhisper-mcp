@@ -1,6 +1,6 @@
 {
   "name": "@typewhisper/mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for TypeWhisper local dictation, transcription, history, and dictionary automation.",
   "type": "module",
   "license": "GPL-3.0-only",
