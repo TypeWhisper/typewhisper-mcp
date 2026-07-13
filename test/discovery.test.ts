@@ -108,4 +108,51 @@ describe("typeWhisperAppSupportDirectory", () => {
     expect(typeWhisperAppSupportDirectory(true, "/tmp/Application Support"))
       .toBe("/tmp/Application Support/TypeWhisper-Dev");
   });
+
+  it("returns the current Windows user-data directories", () => {
+    const root = join("C:", "Users", "Marco", "AppData", "Local");
+    expect(typeWhisperAppSupportDirectory(false, root, "win32", {}))
+      .toBe(join(root, "TypeWhisper-UserData"));
+    expect(typeWhisperAppSupportDirectory(true, root, "win32", {}))
+      .toBe(join(root, "TypeWhisper-DevUserData"));
+  });
+});
+
+describe("Windows discovery", () => {
+  it("prefers the current user-data directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "typewhisper-mcp-win-"));
+    const currentDir = join(root, "TypeWhisper-UserData");
+    const legacyDir = join(root, "TypeWhisper");
+    mkdirSync(currentDir, { recursive: true });
+    mkdirSync(legacyDir, { recursive: true });
+    writeFileSync(join(currentDir, "api-discovery.json"), JSON.stringify({ port: 9901, token: "current" }));
+    writeFileSync(join(legacyDir, "api-discovery.json"), JSON.stringify({ port: 9902, token: "legacy" }));
+
+    expect(discoverTypeWhisperAPI({
+      appSupportDirectory: root,
+      platform: "win32",
+      env: {}
+    })).toMatchObject({
+      baseUrl: "http://127.0.0.1:9901",
+      apiToken: "current",
+      discoveryFile: join(currentDir, "api-discovery.json")
+    });
+  });
+
+  it("falls back to the legacy Windows directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "typewhisper-mcp-win-"));
+    const legacyDir = join(root, "TypeWhisper");
+    mkdirSync(legacyDir, { recursive: true });
+    writeFileSync(join(legacyDir, "api-discovery.json"), JSON.stringify({ port: 9902, token: "legacy" }));
+
+    expect(discoverTypeWhisperAPI({
+      appSupportDirectory: root,
+      platform: "win32",
+      env: {}
+    })).toMatchObject({
+      baseUrl: "http://127.0.0.1:9902",
+      apiToken: "legacy",
+      discoveryFile: join(legacyDir, "api-discovery.json")
+    });
+  });
 });

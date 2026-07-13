@@ -9,6 +9,7 @@ export interface DiscoveryOptions {
   dev?: boolean;
   appSupportDirectory?: string;
   env?: NodeJS.ProcessEnv;
+  platform?: NodeJS.Platform;
 }
 
 export interface TypeWhisperConnection {
@@ -31,10 +32,12 @@ const DEFAULT_PORT = 8978;
 export function discoverTypeWhisperAPI(options: DiscoveryOptions = {}): TypeWhisperConnection {
   const env = options.env ?? process.env;
   const dev = options.dev ?? parseBooleanEnv(env.TYPEWHISPER_DEV) ?? false;
-  const appDirectory = typeWhisperAppSupportDirectory(dev, options.appSupportDirectory);
-  const discoveryFile = join(appDirectory, "api-discovery.json");
-  const portFile = join(appDirectory, "api-port");
-  const discovery = readDiscoveryFile(discoveryFile);
+  const platform = options.platform ?? process.platform;
+  const appDirectories = typeWhisperAppSupportDirectories(dev, options.appSupportDirectory, platform, env);
+  const discoveryFiles = appDirectories.map((directory) => join(directory, "api-discovery.json"));
+  const portFiles = appDirectories.map((directory) => join(directory, "api-port"));
+  const discovery = firstDiscovery(discoveryFiles);
+  const existingPortFile = portFiles.find((path) => existsSync(path));
 
   const explicitBaseUrl = options.baseUrl ?? cleanString(env.TYPEWHISPER_API_BASE_URL);
   const explicitPort = options.port ?? parsePort(env.TYPEWHISPER_API_PORT);
@@ -45,27 +48,70 @@ export function discoverTypeWhisperAPI(options: DiscoveryOptions = {}): TypeWhis
       baseUrl: normalizeBaseUrl(explicitBaseUrl),
       port: portFromBaseUrl(explicitBaseUrl),
       apiToken: explicitToken ?? undefined,
-      discoveryFile: existsSync(discoveryFile) ? discoveryFile : undefined,
-      portFile: existsSync(portFile) ? portFile : undefined,
+      discoveryFile: discovery?.path,
+      portFile: existingPortFile,
       dev
     };
   }
 
-  const port = explicitPort ?? discovery?.port ?? readPortFile(portFile) ?? DEFAULT_PORT;
+  const legacyPort = firstPort(portFiles);
+  const port = explicitPort ?? discovery?.connection.port ?? legacyPort?.port ?? DEFAULT_PORT;
 
   return {
     baseUrl: `http://127.0.0.1:${port}`,
     port,
-    apiToken: explicitToken ?? discovery?.apiToken,
-    discoveryFile: discovery ? discoveryFile : undefined,
-    portFile: existsSync(portFile) ? portFile : undefined,
+    apiToken: explicitToken ?? discovery?.connection.apiToken,
+    discoveryFile: discovery?.path,
+    portFile: legacyPort?.path ?? existingPortFile,
     dev
   };
 }
 
-export function typeWhisperAppSupportDirectory(dev: boolean, baseDirectory?: string): string {
+export function typeWhisperAppSupportDirectory(
+  dev: boolean,
+  baseDirectory?: string,
+  platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  return typeWhisperAppSupportDirectories(dev, baseDirectory, platform, env)[0];
+}
+
+function typeWhisperAppSupportDirectories(
+  dev: boolean,
+  baseDirectory: string | undefined,
+  platform: NodeJS.Platform,
+  env: NodeJS.ProcessEnv
+): string[] {
+  if (platform === "win32") {
+    const root = baseDirectory
+      ?? cleanString(env.LOCALAPPDATA)
+      ?? join(homedir(), "AppData", "Local");
+    return dev
+      ? [join(root, "TypeWhisper-DevUserData"), join(root, "TypeWhisper-Dev")]
+      : [join(root, "TypeWhisper-UserData"), join(root, "TypeWhisper")];
+  }
+
   const root = baseDirectory ?? join(homedir(), "Library", "Application Support");
-  return join(root, dev ? "TypeWhisper-Dev" : "TypeWhisper");
+  return [join(root, dev ? "TypeWhisper-Dev" : "TypeWhisper")];
+}
+
+function firstDiscovery(paths: string[]): {
+  path: string;
+  connection: Pick<TypeWhisperConnection, "port" | "apiToken">;
+} | undefined {
+  for (const path of paths) {
+    const connection = readDiscoveryFile(path);
+    if (connection) return { path, connection };
+  }
+  return undefined;
+}
+
+function firstPort(paths: string[]): { path: string; port: number } | undefined {
+  for (const path of paths) {
+    const port = readPortFile(path);
+    if (port !== undefined) return { path, port };
+  }
+  return undefined;
 }
 
 function readDiscoveryFile(path: string): Pick<TypeWhisperConnection, "port" | "apiToken"> | undefined {

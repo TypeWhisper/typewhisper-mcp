@@ -2,11 +2,11 @@
 
 `@typewhisper/mcp` exposes the local TypeWhisper API as a Model Context Protocol server for coding agents and other MCP clients.
 
-It connects to the TypeWhisper macOS app running on the same machine and lets agents transcribe local files, inspect model status, search transcription history, and manage Dictionary terms and corrections.
+It connects to the TypeWhisper app running on the same macOS or Windows machine and lets agents transcribe local files, inspect model status, search transcription history, and manage Dictionary terms and corrections.
 
 ## Requirements
 
-- macOS with TypeWhisper installed
+- macOS or Windows with TypeWhisper installed
 - TypeWhisper local API server enabled in `Settings > Advanced`
 - Node.js 20 or newer
 
@@ -57,11 +57,14 @@ For a local checkout:
 By default, the server mirrors the TypeWhisper CLI discovery behavior:
 
 1. `TYPEWHISPER_API_BASE_URL`, `TYPEWHISPER_API_PORT`, and `TYPEWHISPER_API_TOKEN`
-2. `~/Library/Application Support/TypeWhisper/api-discovery.json`
-3. `~/Library/Application Support/TypeWhisper/api-port`
+2. TypeWhisper discovery files:
+   - macOS: `~/Library/Application Support/TypeWhisper/api-discovery.json`
+   - Windows: `%LOCALAPPDATA%\\TypeWhisper-UserData\\api-discovery.json`
+   - Windows legacy fallback: `%LOCALAPPDATA%\\TypeWhisper\\api-discovery.json`
+3. The matching legacy `api-port` file
 4. `http://127.0.0.1:8978`
 
-Use `--dev` or `TYPEWHISPER_DEV=1` to read `TypeWhisper-Dev` discovery files.
+Use `--dev` or `TYPEWHISPER_DEV=1` to read development discovery files (`TypeWhisper-Dev` on macOS and `TypeWhisper-DevUserData` with a `TypeWhisper-Dev` fallback on Windows).
 
 ```bash
 typewhisper-mcp --dev
@@ -81,7 +84,7 @@ typewhisper-mcp --base-url http://127.0.0.1:8978 --api-token "$TYPEWHISPER_API_T
 - `typewhisper_upsert_dictionary_correction`
 - `typewhisper_delete_dictionary_correction`
 
-`typewhisper_transcribe_file` requires an absolute file path because TypeWhisper runs as a separate macOS app process.
+`typewhisper_transcribe_file` requires an absolute file path because TypeWhisper runs as a separate app process.
 
 Recorder and live dictation controls are intentionally not part of the first release.
 
